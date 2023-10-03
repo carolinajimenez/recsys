@@ -32,7 +32,7 @@ class RecommendationSystem():
         trainer.run()
 
     def recommend(self, user_id=None, movie_genre=None):
-        rec_list = predictor.run(user_id, movie_genre)
+        rec_list = predictor.run(user_id, movie_genre, self.movies)
         return rec_list
 
 
@@ -69,13 +69,13 @@ if __name__ == "__main__":
     txt2.text_input("Movie genre", key="movie_genre")
     btn3_is_clicked = btn3.button(label="Recommend by movie genre")
     if btn3_is_clicked:
-        if not st.session_state.user_id:
+        if not st.session_state.movie_genre:
             st.warning('Movie genre is empty', icon="⚠️")
         else:
             rec_list = recsys.recommend(movie_genre=st.session_state.movie_genre)
 
-    print("rec_list", rec_list)
     if rec_list is not None:
+        print("rec_list", rec_list)
         st.write("Recommended Items:")
         # Crear un DataFrame con los resultados
         results_df = pd.DataFrame({'movieId': rec_list})
