@@ -166,6 +166,19 @@ class FeatureCreation():
         ):
         """
         Get formatted interactions
+
+        Args:
+            * df_interactions (pd.DataFrame): Interactions between users and items.
+            * user_id_col (str): The name of the column containing user identifiers.
+            * item_id_col (str): The name of the column containing item identifiers.
+            * interaction_col (str): The name of the column containing interaction information (e.g., ratings or scores).
+
+        Returns:
+            * interaction_tuples (list): A list of tuples representing formatted interactions.
+                Each tuple contains three elements in the following order: (user_id, item_id, interaction_value).
+                - user_id (int or str): The unique identifier of the user involved in the interaction.
+                - item_id (int or str): The unique identifier of the item involved in the interaction.
+                - interaction_value (float or int): The value of the interaction, typically a rating or score.
         """
         interaction_tuples = df_interactions.apply(
             lambda x: (x[user_id_col], x[item_id_col], x[interaction_col]), axis=1).tolist()

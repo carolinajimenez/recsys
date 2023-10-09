@@ -3,12 +3,8 @@ Recommendation System - LigthFM Model Training
 """
 
 import os
-import random
 
-import numpy as np
 import pandas as pd
-import pandas_profiling
-from scipy import sparse
 from lightfm import LightFM
 from lightfm.data import Dataset
 from lightfm.evaluation import auc_score, precision_at_k
@@ -48,13 +44,13 @@ class LightFMTrainer():
         )
 
         # REPORTS PATH
-        self.reports_path = "recsys/reports"
+        self.reports_path = "../reports"
 
     def load_data(self):
         """
         Load JSON data
         """
-        data_path = "recsys/data/raw"
+        data_path = "data/raw"
         self.movies = pd.read_csv(f"{data_path}/movies.csv")
         self.ratings = pd.read_csv(f"{data_path}/ratings.csv")
 
@@ -92,7 +88,7 @@ class LightFMTrainer():
 
         self.save_dataframe_locally(
             dataframe=self.users,
-            db_path="recsys/data/raw",
+            db_path="data/processed",
             db_name="users",
         )
 
@@ -365,14 +361,15 @@ class LightFMTrainer():
             self.model = self.train_model(lightfm_dataset)
             self.evaluate_model(lightfm_dataset)
 
+            save_path = "models"
             save_file_pkl(
                 file=lightfm_dataset,
-                save_path="recsys/models",
+                save_path=save_path,
                 filename="lightfm_dataset",
             )
             save_file_pkl(
                 file=self.model,
-                save_path="recsys/models",
+                save_path=save_path,
                 filename="lightfm_model",
             )
             self.training_log.info("✔ Training model ready")
@@ -383,24 +380,32 @@ class LightFMTrainer():
             raise custom_exception from error
 
     def run(self):
-        # Get user-item features and formatted interactions
-        user_data, item_data, formatted_interactions = feature_creation.get_features(
-            data={
-                "user": {
-                    "df_user": self.users,
-                    "feature_columns": ["genres_preference"],
-                },
-                "item": {
-                    "df_item": self.movies,
-                    "feature_columns": ["genres"],
-                },
-                "interactions": self.ratings,
-            }
-        )
+        """
+        Train model
+        """
+        try:
+            # Get user-item features and formatted interactions
+            user_data, item_data, formatted_interactions = feature_creation.get_features(
+                data={
+                    "user": {
+                        "df_user": self.users,
+                        "feature_columns": ["genres_preference"],
+                    },
+                    "item": {
+                        "df_item": self.movies,
+                        "feature_columns": ["genres"],
+                    },
+                    "interactions": self.ratings,
+                }
+            )
 
-        item_data = (self.movies,) + item_data
-        self.train_and_save_model(
-            user_data=user_data,
-            item_data=item_data,
-            formatted_interactions=formatted_interactions,
-        )
+            item_data = (self.movies,) + item_data
+            self.train_and_save_model(
+                user_data=user_data,
+                item_data=item_data,
+                formatted_interactions=formatted_interactions,
+            )
+            return True
+        except Exception as error:
+            self.training_log.info("✘ Error: %s", error)
+            return False

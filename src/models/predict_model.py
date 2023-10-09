@@ -29,12 +29,13 @@ class LightFMPredictor():
         """
         Load predicting data (LigthFM model and dataset)
         """
+        save_path = "models"
         self.lightfm_model = read_file_pkl(
-            save_path="recsys/models",
+            save_path=save_path,
             filename="lightfm_model",
         )
         self.lightfm_dataset = read_file_pkl(
-            save_path="recsys/models",
+            save_path=save_path,
             filename="lightfm_dataset",
         )
 
@@ -126,6 +127,27 @@ class LightFMPredictor():
         return recommended_movie
 
     def run(self, user_id, movie_genre, movies):
+        """
+        Run the LightFM recommendation system to generate recommendations for a user or movies based on genre.
+
+        Args:
+            * user_id (int or None): User ID for which recommendations will be generated.
+                        Set to None if movie recommendations based on genre are needed.
+            * movie_genre (str or None): Genre for which movie recommendations are needed.
+                        Set to None if user-specific recommendations are needed.
+            * movies (pd.DataFrame): DataFrame containing movie information, including 'movieId', 'title', and 'genres'.
+
+        Returns:
+            * rec_list (list): A list of recommended movie IDs.
+                        If user_id is provided, it contains movie recommendations for the user.
+                        If movie_genre is provided, it contains movie recommendations based on genre.
+
+        Note:
+            - If user_id is not None, the method will generate movie recommendations for the specified user.
+            - If movie_genre is not None, the method will generate movie recommendations based on the specified genre.
+            - The recommendations are determined using the trained LightFM model and the provided dataset.
+            - The number of recommendations returned is controlled by the method's logic and parameters.
+        """
         self.load_predicting_data()
 
         rec_list = None

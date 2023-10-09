@@ -21,6 +21,7 @@ class Logger:
     """
     Logger
     """
+
     def __init__(self, name, level=logging.DEBUG, show_asctime=False):
         self.name = name
         self.level = level

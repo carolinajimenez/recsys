@@ -29,9 +29,20 @@ class RecommendationSystem():
         self.movies = trainer.movies
 
     def train_model(self):
-        trainer.run()
+        """
+        Train LightFM model
+        """
+        res = trainer.run()
+        return res
 
     def recommend(self, user_id=None, movie_genre=None):
+        """
+        LightFM Predictor
+
+        Args:
+            * user_id (str)
+            * movie_genre (str)
+        """
         rec_list = predictor.run(user_id, movie_genre, self.movies)
         return rec_list
 
@@ -45,14 +56,16 @@ if __name__ == "__main__":
     st.write("Movie data")
     st.write(recsys.movies.head())
 
-    model_image = Image.open("recsys/reports/figures/you_might_like.png")
+    model_image = Image.open("reports/figures/you_might_like.png")
 
     img, btn = st.columns([2.4, 1])
     img.image(model_image, caption='LightFM model')
     btn1_is_clicked = btn.button(label="Train model")
 
     if btn1_is_clicked:
-        recsys.train_model()
+        res = recsys.train_model()
+        if not res:
+            st.warning("There was an error in training", icon="⚠️")
 
     rec_list = None
 
@@ -61,7 +74,7 @@ if __name__ == "__main__":
     btn2_is_clicked = btn2.button(label="Recommend by user id")
     if btn2_is_clicked:
         if not st.session_state.user_id:
-            st.warning('User ID is empty', icon="⚠️")
+            st.warning("User ID is empty", icon="⚠️")
         else:
             rec_list = recsys.recommend(user_id=st.session_state.user_id)
 
@@ -70,16 +83,16 @@ if __name__ == "__main__":
     btn3_is_clicked = btn3.button(label="Recommend by movie genre")
     if btn3_is_clicked:
         if not st.session_state.movie_genre:
-            st.warning('Movie genre is empty', icon="⚠️")
+            st.warning("Movie genre is empty", icon="⚠️")
         else:
             rec_list = recsys.recommend(movie_genre=st.session_state.movie_genre)
 
     if rec_list is not None:
         print("rec_list", rec_list)
         st.write("Recommended Items:")
-        # Crear un DataFrame con los resultados
+        # Create a DataFrame with the results
         results_df = pd.DataFrame({'movieId': rec_list})
 
-        # Realizar una fusión (merge) entre el DataFrame de resultados y el DataFrame de películas
+        # Merge between the results DataFrame and the movies DataFrame
         recommended_movies = pd.merge(results_df, recsys.movies, on='movieId', how='inner')
         st.write(recommended_movies)
