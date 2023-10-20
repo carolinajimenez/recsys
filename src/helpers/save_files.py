@@ -4,7 +4,6 @@ Save files
 
 import os
 import pickle
-import base64
 
 
 def save_file_pkl(file, save_path, filename):

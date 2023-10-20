@@ -39,16 +39,12 @@ class LightFMPredictor():
             filename="lightfm_dataset",
         )
 
-    def sample_recommendation_user(self, model, interactions, user_id, 
-                               user_dict, threshold = 0, nrec_items = 10):
+    def sample_recommendation_user(self, user_id, threshold = 0, nrec_items = 10):
         """
         Function to produce user recommendations
 
         Args: 
-            * model = Trained matrix factorization model
-            * interactions = dataset used for training the model
             * user_id = user ID for which we need to generate recommendation
-            * user_dict = Dictionary type input containing interaction_index as key and user_id as value
             * threshold = value above which the rating is favorable in new interaction matrix
             * nrec_items = Number of output recommendation needed
 
@@ -57,20 +53,39 @@ class LightFMPredictor():
             * Prints list of N recommended items  which user hopefully will be interested in
         """
         self.inference_log.info("Get recommendations")
-        _, n_items = interactions.shape
-        user_x = user_dict[float(user_id)]
-        scores = model.predict(
+
+        # Get user-id map according lightfm dataset
+        userId = float(user_id)
+        user_x = self.lightfm_dataset['user_id_map'][userId]
+
+        # Get list of movies that user has rated with a value greater than 4 (rating)
+        ratings = pd.read_csv(f"data/raw/ratings.csv")
+        filtered_ratings = ratings[(ratings['userId'] == userId) & (ratings['rating'] > 4.0)]
+        # Check if the list is empty and if so, assign an empty list
+        if filtered_ratings.empty:
+            movie_ids_by_user = []
+        else:
+            # Get list of movieId for specific user
+            movie_ids_by_user = filtered_ratings['movieId'].tolist()       
+        # Remove duplicates from list
+        excluded_items = list(set(movie_ids_by_user))
+
+        # Get item-ids (movies) available to recommend
+        items_availables_to_rec = self.lightfm_dataset['item_id_map']
+        values_availables_to_rec = []
+        # Filter item idx that can be taken into account
+        if len(excluded_items) != 0 and items_availables_to_rec is not None:
+            items_availables_to_rec = {
+                k: v for k,
+                v in items_availables_to_rec.items() if k not in excluded_items}
+            values_availables_to_rec = list(items_availables_to_rec.values())
+
+        scores = self.lightfm_model.predict(
             user_ids=user_x,
-            item_ids=np.arange(n_items),
+            item_ids=values_availables_to_rec,
             user_features=self.lightfm_dataset["user_features_matrix"],
             item_features=self.lightfm_dataset["item_features_matrix"],
         )
-
-        # Create a mask to filter out items the user has interacted with above the threshold
-        known_items_mask = interactions.getrow(user_x).toarray().flatten() > threshold
-        
-        # Set scores for known items to a very low value (e.g., -1e9) to filter them out
-        scores[known_items_mask] = -1e9
 
         # Sort items by predicted scores in descending order
         scores_sorted_indices = np.argsort(-scores)
@@ -80,13 +95,11 @@ class LightFMPredictor():
         return_score_list = scores_sorted_indices[:nrec_items]
         return return_score_list
 
-    def recommend_movies_by_genre(self, model, interactions, movies, genre, nrec_items=10):
+    def recommend_movies_by_genre(self, movies, genre, nrec_items=10):
         """
         Function to recommend movies based on genre
 
         Args:
-            * model: Trained matrix factorization model (LightFM)
-            * interactions: interaction matrix used for training the model (COO format)
             * movies: DataFrame containing movie information, including 'movieId', 'title', and 'genres'
             * genre: Genre for which you want movie recommendations
             * nrec_items: Number of output recommendations needed
@@ -100,20 +113,14 @@ class LightFMPredictor():
         # Extract the 'movieId' values of genre-specific movies
         genre_movie_ids = genre_movies['movieId'].values
 
-        _, n_items = interactions.shape
-        scores = model.predict(
+        _, n_items = self.lightfm_dataset["interactions"].shape
+        scores = self.lightfm_model.predict(
             user_ids=0,
             item_ids=np.arange(n_items),
             user_features=self.lightfm_dataset["user_features_matrix"],
             item_features=self.lightfm_dataset["item_features_matrix"],
         )
-        
-        # Create a mask to filter out items the user has already interacted with
-        known_items_mask = interactions.getrow(0).toarray().flatten() > 0
 
-        # Set scores for known items to a very low value (e.g., -1e9) to filter them out
-        scores[known_items_mask] = -1e9
-        
         # Sort items by predicted scores in descending order
         scores_sorted_indices = np.argsort(-scores)
         
@@ -153,17 +160,12 @@ class LightFMPredictor():
         rec_list = None
         if user_id is not None:
             rec_list = self.sample_recommendation_user(
-                model=self.lightfm_model,
-                interactions=self.lightfm_dataset["interactions"],
                 user_id=user_id,
-                user_dict=self.lightfm_dataset["user_id_map"],
                 threshold=4,
                 nrec_items=10,
             )
         else:
             rec_list = self.recommend_movies_by_genre(
-                model=self.lightfm_model,
-                interactions=self.lightfm_dataset["interactions"],
                 movies=movies,
                 genre=movie_genre,
             )

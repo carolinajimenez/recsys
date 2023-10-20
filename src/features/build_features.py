@@ -134,7 +134,7 @@ class FeatureCreation():
         """
         if data_name == "user":
             # Adding the dummy user with ID 0
-            dummy_user = {"UserId": 0}
+            dummy_user = {"userId": 0}
             for col in column_names:
                 dummy_user[col] = None
         

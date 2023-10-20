@@ -60,35 +60,38 @@ if __name__ == "__main__":
 
     img, btn = st.columns([2.4, 1])
     img.image(model_image, caption='LightFM model')
-    btn1_is_clicked = btn.button(label="Train model")
+    btn_train_model_is_clicked = btn.button(label="Train model")
 
-    if btn1_is_clicked:
+    txt1, btn2 = st.columns([1.5, 1])
+    input_user_id_text = txt1.text_input("User ID", key="user_id")
+    btn_user_id_is_clicked = btn2.button(label="Recommend by user id")
+
+    txt2, btn3 = st.columns([1.5, 1])
+    input_movie_genre_text = txt2.text_input("Movie genre", key="movie_genre")
+    btn_movie_genre_is_clicked = btn3.button(label="Recommend by movie genre")
+
+    if btn_train_model_is_clicked:
         res = recsys.train_model()
         if not res:
             st.warning("There was an error in training", icon="⚠️")
 
     rec_list = None
 
-    txt1, btn2 = st.columns([1.5, 1])
-    txt1.text_input("User ID", key="user_id")
-    btn2_is_clicked = btn2.button(label="Recommend by user id")
-    if btn2_is_clicked:
+    if btn_user_id_is_clicked:
+        input_movie_genre_text = ""
         if not st.session_state.user_id:
             st.warning("User ID is empty", icon="⚠️")
         else:
             rec_list = recsys.recommend(user_id=st.session_state.user_id)
 
-    txt2, btn3 = st.columns([1.5, 1])
-    txt2.text_input("Movie genre", key="movie_genre")
-    btn3_is_clicked = btn3.button(label="Recommend by movie genre")
-    if btn3_is_clicked:
+    if btn_movie_genre_is_clicked:
+        input_user_id_text = ""
         if not st.session_state.movie_genre:
             st.warning("Movie genre is empty", icon="⚠️")
         else:
             rec_list = recsys.recommend(movie_genre=st.session_state.movie_genre)
 
     if rec_list is not None:
-        print("rec_list", rec_list)
         st.write("Recommended Items:")
         # Create a DataFrame with the results
         results_df = pd.DataFrame({'movieId': rec_list})
